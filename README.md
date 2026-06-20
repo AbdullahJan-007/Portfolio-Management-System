@@ -44,10 +44,21 @@ A complete full-stack portfolio management application built with **Next.js (App
 npm install
 ```
 
-### 2. Set up the database
+### 2. Set up environment variables
 
-The `.env` file already contains a local SQLite connection string and an
-`AUTH_SECRET`. Create the database schema:
+Copy the example env file and keep your secrets local:
+
+```bash
+copy .env.example .env
+```
+
+On macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set a long random `AUTH_SECRET`. Then create the database schema:
 
 ```bash
 npm run db:push
