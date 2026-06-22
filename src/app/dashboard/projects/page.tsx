@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Project = {
   id: string;
@@ -11,6 +11,17 @@ type Project = {
   repoUrl: string | null;
   imageUrl: string | null;
   tags: string | null;
+};
+
+type Category = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+type Skill = {
+  id: string;
+  name: string;
 };
 
 type FormState = {
@@ -33,18 +44,6 @@ const blank: FormState = {
   tags: "",
 };
 
-const PROJECT_CATEGORIES = [
-  "Web App",
-  "Mobile App",
-  "Backend / API",
-  "Desktop App",
-  "Data / ML",
-  "DevOps / Tools",
-  "Design",
-  "Open Source",
-  "Other",
-];
-
 function tagList(tags: string | null): string[] {
   if (!tags) return [];
   return tags.split(",").map((t) => t.trim()).filter(Boolean);
@@ -52,6 +51,8 @@ function tagList(tags: string | null): string[] {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,16 +60,26 @@ export default function ProjectsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(blank);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Search & filter state
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeSkill, setActiveSkill] = useState("All");
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/projects");
-    const data = await res.json();
-    setProjects(data.projects ?? []);
+    const [projectsRes, categoriesRes, skillsRes] = await Promise.all([
+      fetch("/api/projects"),
+      fetch("/api/categories"),
+      fetch("/api/skills"),
+    ]);
+    const projectsData = await projectsRes.json();
+    const categoriesData = await categoriesRes.json();
+    const skillsData = await skillsRes.json();
+    setProjects(projectsData.projects ?? []);
+    setCategories(categoriesData.categories ?? []);
+    setSkills(skillsData.skills ?? []);
     setLoading(false);
   }
 
@@ -96,6 +107,30 @@ export default function ProjectsPage() {
     });
     setError(null);
     setOpen(true);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Image upload failed.");
+        return;
+      }
+      setForm((f) => ({ ...f, imageUrl: data.url }));
+    } catch {
+      setError("Network error during upload.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -130,17 +165,31 @@ export default function ProjectsPage() {
     await load();
   }
 
-  // Derived category list
-  const categories = useMemo(() => {
-    const cats = new Set(projects.map((p) => p.category?.trim()).filter(Boolean) as string[]);
-    return ["All", ...Array.from(cats).sort()];
-  }, [projects]);
+  const categoryOptions = useMemo(() => {
+    const fromProjects = new Set(
+      projects.map((p) => p.category?.trim()).filter(Boolean) as string[]
+    );
+    const fromManaged = categories.map((c) => c.name);
+    return ["All", ...Array.from(new Set([...fromManaged, ...fromProjects])).sort()];
+  }, [projects, categories]);
 
-  // Filtered + searched projects
+  const skillOptions = useMemo(() => {
+    const fromSkills = skills.map((s) => s.name.trim()).filter(Boolean);
+    const fromTags = projects.flatMap((p) => tagList(p.tags));
+    return ["All", ...Array.from(new Set([...fromSkills, ...fromTags])).sort()];
+  }, [projects, skills]);
+
   const filtered = useMemo(() => {
     let list = projects;
     if (activeCategory !== "All") {
       list = list.filter((p) => p.category?.trim() === activeCategory);
+    }
+    if (activeSkill !== "All") {
+      list = list.filter((p) =>
+        tagList(p.tags).some(
+          (tag) => tag.toLowerCase() === activeSkill.toLowerCase()
+        )
+      );
     }
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -153,11 +202,18 @@ export default function ProjectsPage() {
       );
     }
     return list;
-  }, [projects, activeCategory, search]);
+  }, [projects, activeCategory, activeSkill, search]);
+
+  const formCategoryOptions = useMemo(() => {
+    const names = categories.map((c) => c.name);
+    if (form.category && !names.includes(form.category)) {
+      return [...names, form.category];
+    }
+    return names;
+  }, [categories, form.category]);
 
   return (
     <div className="animate-fade-in space-y-6">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">Projects</h2>
@@ -170,8 +226,7 @@ export default function ProjectsPage() {
         </button>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
           <p className="text-2xl font-bold text-brand-600">{projects.length}</p>
           <p className="mt-0.5 text-xs font-medium text-slate-500">Total Projects</p>
@@ -184,15 +239,18 @@ export default function ProjectsPage() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
           <p className="text-2xl font-bold text-brand-600">
-            {new Set(
-              projects.flatMap((p) => tagList(p.tags))
-            ).size}
+            {new Set(projects.flatMap((p) => tagList(p.tags))).size}
           </p>
           <p className="mt-0.5 text-xs font-medium text-slate-500">Unique Tags</p>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+          <p className="text-2xl font-bold text-brand-600">
+            {projects.filter((p) => p.imageUrl).length}
+          </p>
+          <p className="mt-0.5 text-xs font-medium text-slate-500">With Images</p>
+        </div>
       </div>
 
-      {/* Search bar */}
       <div className="relative">
         <svg
           className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
@@ -221,32 +279,60 @@ export default function ProjectsPage() {
         )}
       </div>
 
-      {/* Category filter pills */}
       {projects.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                activeCategory === cat
-                  ? "bg-brand-600 text-white shadow-sm"
-                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {cat}
-              {cat !== "All" && (
-                <span className="ml-1.5 opacity-70">
-                  ({projects.filter((p) => p.category?.trim() === cat).length})
-                </span>
-              )}
-            </button>
-          ))}
+        <div className="space-y-3">
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              Category filter
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {categoryOptions.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    activeCategory === cat
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {cat}
+                  {cat !== "All" && (
+                    <span className="ml-1.5 opacity-70">
+                      ({projects.filter((p) => p.category?.trim() === cat).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {skillOptions.length > 1 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Skill filter
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {skillOptions.map((skill) => (
+                  <button
+                    key={skill}
+                    onClick={() => setActiveSkill(skill)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                      activeSkill === skill
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {skill}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Results count */}
-      {(search || activeCategory !== "All") && !loading && (
+      {(search || activeCategory !== "All" || activeSkill !== "All") && !loading && (
         <p className="text-sm text-slate-500">
           Showing <span className="font-semibold text-slate-700">{filtered.length}</span> of{" "}
           {projects.length} projects
@@ -258,7 +344,6 @@ export default function ProjectsPage() {
         </p>
       )}
 
-      {/* Project grid */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600" />
@@ -277,9 +362,13 @@ export default function ProjectsPage() {
       ) : filtered.length === 0 ? (
         <div className="card p-10 text-center">
           <p className="text-3xl">🔍</p>
-          <p className="mt-3 text-sm font-medium text-slate-700">No projects match your search</p>
+          <p className="mt-3 text-sm font-medium text-slate-700">No projects match your filters</p>
           <button
-            onClick={() => { setSearch(""); setActiveCategory("All"); }}
+            onClick={() => {
+              setSearch("");
+              setActiveCategory("All");
+              setActiveSkill("All");
+            }}
             className="mt-3 text-sm font-medium text-brand-600 hover:text-brand-700"
           >
             Clear filters
@@ -373,7 +462,6 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Add / Edit Modal */}
       {open && (
         <div
           className="fixed inset-0 z-50 grid place-items-center bg-slate-900/60 p-4"
@@ -422,10 +510,18 @@ export default function ProjectsPage() {
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                 >
                   <option value="">— Select a category —</option>
-                  {PROJECT_CATEGORIES.map((c) => (
+                  {formCategoryOptions.map((c) => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
+                {categories.length === 0 && (
+                  <p className="mt-1 text-xs text-slate-400">
+                    No categories yet.{" "}
+                    <a href="/dashboard/categories" className="text-brand-600 hover:text-brand-700">
+                      Create one
+                    </a>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -461,13 +557,40 @@ export default function ProjectsPage() {
               </div>
 
               <div>
-                <label className="label">Image URL</label>
-                <input
-                  className="input"
-                  placeholder="https://…"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                />
+                <label className="label">Project image</label>
+                <div className="space-y-3">
+                  {form.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={form.imageUrl}
+                      alt="Project preview"
+                      className="h-32 w-full rounded-xl object-cover border border-slate-200"
+                    />
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary text-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                    >
+                      {uploading ? "Uploading…" : "Upload image"}
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      className="hidden"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
+                  <input
+                    className="input"
+                    placeholder="Or paste image URL…"
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div>
@@ -484,7 +607,7 @@ export default function ProjectsPage() {
                 <button type="button" className="btn-secondary" onClick={() => setOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn-primary" disabled={submitting}>
+                <button type="submit" className="btn-primary" disabled={submitting || uploading}>
                   {submitting ? "Saving…" : editingId ? "Update project" : "Create project"}
                 </button>
               </div>

@@ -1,23 +1,69 @@
 import Link from "next/link";
-import { getCurrentUserId } from "@/lib/auth";
+import { getCurrentUser, getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+type Activity = {
+  id: string;
+  type: "project" | "skill" | "profile";
+  action: "created" | "updated";
+  label: string;
+  href: string;
+  timestamp: Date;
+};
+
+function formatRelativeTime(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function formatMemberSince(date: Date): string {
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
 
 export default async function DashboardOverview() {
   const userId = (await getCurrentUserId())!;
 
-  const [profile, skills, projects] = await Promise.all([
-    prisma.profile.findUnique({ where: { userId } }),
-    prisma.skill.findMany({
-      where: { userId },
-      select: { category: true },
-    }),
-    prisma.project.findMany({
-      where: { userId },
-      select: { category: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-      take: 5,
-    }),
-  ]);
+  const [user, profile, skills, recentProjects, recentSkills, categoryCount] =
+    await Promise.all([
+      getCurrentUser(),
+      prisma.profile.findUnique({ where: { userId } }),
+      prisma.skill.findMany({
+        where: { userId },
+        select: { category: true },
+      }),
+      prisma.project.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      }),
+      prisma.skill.findMany({
+        where: { userId },
+        select: {
+          id: true,
+          name: true,
+          category: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      }),
+      prisma.projectCategory.count({ where: { userId } }),
+    ]);
 
   const [skillCount, projectCount] = await Promise.all([
     prisma.skill.count({ where: { userId } }),
@@ -28,9 +74,8 @@ export default async function DashboardOverview() {
     skills.map((s) => s.category).filter(Boolean)
   );
   const projectCategories = new Set(
-    projects.map((p) => p.category).filter(Boolean)
+    recentProjects.map((p) => p.category).filter(Boolean)
   );
-  const totalCategories = new Set([...skillCategories, ...projectCategories]);
 
   const completeness = (() => {
     if (!profile) return 0;
@@ -42,9 +87,62 @@ export default async function DashboardOverview() {
       profile.contactEmail,
       profile.phone,
       profile.website,
+      profile.avatarUrl,
     ];
     return Math.round((fields.filter(Boolean).length / fields.length) * 100);
   })();
+
+  const activities: Activity[] = [];
+
+  for (const project of recentProjects) {
+    const action =
+      project.updatedAt.getTime() - project.createdAt.getTime() > 1000
+        ? "updated"
+        : "created";
+    activities.push({
+      id: `project-${project.id}`,
+      type: "project",
+      action,
+      label: project.title,
+      href: "/dashboard/projects",
+      timestamp: project.updatedAt,
+    });
+  }
+
+  for (const skill of recentSkills) {
+    const action =
+      skill.updatedAt.getTime() - skill.createdAt.getTime() > 1000
+        ? "updated"
+        : "created";
+    activities.push({
+      id: `skill-${skill.id}`,
+      type: "skill",
+      action,
+      label: skill.name,
+      href: "/dashboard/skills",
+      timestamp: skill.updatedAt,
+    });
+  }
+
+  if (profile?.updatedAt) {
+    activities.push({
+      id: "profile",
+      type: "profile",
+      action: "updated",
+      label: profile.fullName || "Profile",
+      href: "/dashboard/profile",
+      timestamp: profile.updatedAt,
+    });
+  }
+
+  activities.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  const recentActivities = activities.slice(0, 8);
+
+  const activityIcons: Record<Activity["type"], string> = {
+    project: "🚀",
+    skill: "⚡",
+    profile: "👤",
+  };
 
   const statCards = [
     {
@@ -72,10 +170,10 @@ export default async function DashboardOverview() {
       ),
     },
     {
-      label: "Categories",
-      value: totalCategories.size,
-      sub: "across skills & projects",
-      href: "/dashboard/skills",
+      label: "Managed Categories",
+      value: categoryCount,
+      sub: "project categories",
+      href: "/dashboard/categories",
       color: "from-emerald-500 to-teal-600",
       icon: (
         <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
@@ -99,17 +197,15 @@ export default async function DashboardOverview() {
 
   return (
     <div className="animate-fade-in space-y-8">
-      {/* Welcome */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900">
           Welcome back{profile?.fullName ? `, ${profile.fullName.split(" ")[0]}` : ""}! 👋
         </h2>
         <p className="mt-1 text-slate-500">
-          Here&apos;s a snapshot of your portfolio dashboard.
+          Here&apos;s a snapshot of your portfolio CMS dashboard.
         </p>
       </div>
 
-      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {statCards.map((card) => (
           <Link
@@ -145,7 +241,100 @@ export default async function DashboardOverview() {
         ))}
       </div>
 
-      {/* Profile completion bar */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Recent Activities */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-semibold text-slate-900">Recent Activities</h3>
+            <Link
+              href="/dashboard/preview"
+              className="text-xs font-medium text-brand-600 hover:text-brand-700"
+            >
+              View preview →
+            </Link>
+          </div>
+          {recentActivities.length === 0 ? (
+            <p className="mt-6 text-sm text-slate-500">
+              No activity yet. Start by adding skills or projects.
+            </p>
+          ) : (
+            <ul className="mt-4 space-y-3">
+              {recentActivities.map((activity) => (
+                <li key={activity.id}>
+                  <Link
+                    href={activity.href}
+                    className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 transition-colors hover:border-brand-200 hover:bg-brand-50"
+                  >
+                    <span className="text-lg">{activityIcons[activity.type]}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {activity.action === "created" ? "Added" : "Updated"}{" "}
+                        {activity.type === "project"
+                          ? "project"
+                          : activity.type === "skill"
+                            ? "skill"
+                            : "profile"}
+                        : {activity.label}
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {formatRelativeTime(activity.timestamp)}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* User Statistics */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="text-base font-semibold text-slate-900">User Statistics</h3>
+          <dl className="mt-4 space-y-4">
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <dt className="text-sm text-slate-500">Account email</dt>
+              <dd className="text-sm font-medium text-slate-900">{user?.email}</dd>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <dt className="text-sm text-slate-500">Member since</dt>
+              <dd className="text-sm font-medium text-slate-900">
+                {user ? formatMemberSince(user.createdAt) : "—"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <dt className="text-sm text-slate-500">Total portfolio items</dt>
+              <dd className="text-sm font-medium text-slate-900">
+                {skillCount + projectCount}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <dt className="text-sm text-slate-500">Profile completeness</dt>
+              <dd className="text-sm font-medium text-slate-900">{completeness}%</dd>
+            </div>
+            <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+              <dt className="text-sm text-slate-500">Managed categories</dt>
+              <dd className="text-sm font-medium text-slate-900">{categoryCount}</dd>
+            </div>
+          </dl>
+          {completeness < 100 && (
+            <div className="mt-4">
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-2 rounded-full bg-brand-500 transition-all"
+                  style={{ width: `${completeness}%` }}
+                />
+              </div>
+              <Link
+                href="/dashboard/profile"
+                className="mt-2 inline-block text-xs font-medium text-brand-600 hover:text-brand-700"
+              >
+                Complete your profile →
+              </Link>
+            </div>
+          )}
+        </div>
+      </div>
+
       {completeness < 100 && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
           <div className="flex items-center justify-between">
@@ -164,19 +353,12 @@ export default async function DashboardOverview() {
               Complete profile
             </Link>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-amber-200">
-            <div
-              className="h-2 rounded-full bg-amber-500 transition-all"
-              style={{ width: `${completeness}%` }}
-            />
-          </div>
         </div>
       )}
 
-      {/* Quick actions */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h3 className="text-base font-semibold text-slate-900">Quick actions</h3>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           <Link
             href="/dashboard/profile"
             className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-medium text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
@@ -204,10 +386,27 @@ export default async function DashboardOverview() {
             </span>
             Add a project
           </Link>
+          <Link
+            href="/dashboard/categories"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-medium text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg">
+              🏷️
+            </span>
+            Categories
+          </Link>
+          <Link
+            href="/dashboard/preview"
+            className="flex items-center gap-3 rounded-xl border border-slate-200 p-4 text-sm font-medium text-slate-700 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700"
+          >
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg">
+              👁️
+            </span>
+            Live preview
+          </Link>
         </div>
       </div>
 
-      {/* Category breakdown */}
       {(skillCategories.size > 0 || projectCategories.size > 0) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {skillCategories.size > 0 && (

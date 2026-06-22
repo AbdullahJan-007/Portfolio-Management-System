@@ -22,3 +22,12 @@ export function clampLevel(value: unknown): number {
   if (!Number.isFinite(n)) return 3;
   return Math.min(5, Math.max(1, Math.round(n)));
 }
+
+export function slugifyString(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

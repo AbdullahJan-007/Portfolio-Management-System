@@ -7,6 +7,8 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/dashboard/profile": { title: "Profile", subtitle: "Manage your personal information" },
   "/dashboard/skills": { title: "Skills", subtitle: "Add and manage your skills" },
   "/dashboard/projects": { title: "Projects", subtitle: "Showcase your work" },
+  "/dashboard/categories": { title: "Categories", subtitle: "Manage project categories" },
+  "/dashboard/preview": { title: "Portfolio Preview", subtitle: "Live preview of your portfolio" },
 };
 
 function getInitials(name?: string | null, email?: string): string {
