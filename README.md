@@ -25,6 +25,18 @@ A complete full-stack portfolio management application built with **Next.js (App
 - Add projects (title, description, live URL, repo URL, image, tags)
 - Update projects
 - Delete projects
+- Upload project images
+
+### Dashboard
+- Dashboard statistics (skills, projects, categories, profile completeness)
+- Recent activity feed
+- Smart notifications (profile tips, onboarding alerts)
+- Quick actions and category overview
+
+### Profile & Security
+- Update profile information
+- Upload profile picture
+- Change password
 
 ## Tech Stack
 
@@ -113,8 +125,16 @@ src/
 | POST   | `/api/auth/login`     | Log in                   |
 | POST   | `/api/auth/logout`    | Log out                  |
 | GET    | `/api/auth/me`        | Current user             |
+| POST   | `/api/auth/change-password` | Change password  |
+| GET    | `/api/dashboard`      | Dashboard stats, activity, notifications |
+| GET    | `/api/notifications`  | User notifications       |
 | GET    | `/api/profile`        | Get profile              |
 | PUT    | `/api/profile`        | Create/update profile    |
+| POST   | `/api/upload`         | Upload image (avatar/project) |
+| GET    | `/api/categories`     | List project categories  |
+| POST   | `/api/categories`     | Create category          |
+| PUT    | `/api/categories/:id` | Update category          |
+| DELETE | `/api/categories/:id` | Delete category          |
 | GET    | `/api/skills`         | List skills              |
 | POST   | `/api/skills`         | Create skill             |
 | PUT    | `/api/skills/:id`     | Update skill             |

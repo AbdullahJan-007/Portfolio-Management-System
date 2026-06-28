@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { IconBox } from "@/components/icons";
 
 type Profile = {
   fullName: string;
@@ -261,6 +262,7 @@ export default function PreviewPage() {
                   {profile?.website && <p>Website: {profile.website}</p>}
                   {profile?.github && <p>GitHub: {profile.github}</p>}
                   {profile?.linkedin && <p>LinkedIn: {profile.linkedin}</p>}
+                  {profile?.twitter && <p>Twitter / X: {profile.twitter}</p>}
                 </div>
               </div>
             </div>
@@ -343,8 +345,8 @@ export default function PreviewPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={project.imageUrl} alt={project.title} className="h-44 w-full object-cover rounded-t-3xl" />
                 ) : (
-                  <div className="grid h-44 w-full place-items-center rounded-t-3xl bg-brand-50 text-5xl">
-                    🚀
+                  <div className="grid h-44 w-full place-items-center rounded-t-3xl bg-brand-50">
+                    <IconBox name="folder-code" size="xl" variant="soft" />
                   </div>
                 )}
                 <div className="p-5">

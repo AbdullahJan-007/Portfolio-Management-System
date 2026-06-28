@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { IconBox } from "@/components/icons";
 
 type Skill = {
   id: string;
@@ -241,8 +242,10 @@ export default function SkillsPage() {
         </div>
       ) : skills.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-4xl">⚡</p>
-          <p className="mt-3 text-base font-medium text-slate-700">No skills yet</p>
+          <div className="mx-auto w-fit">
+            <IconBox name="skills" size="2xl" variant="amber" />
+          </div>
+          <p className="mt-4 text-base font-medium text-slate-700">No skills yet</p>
           <p className="mt-1 text-sm text-slate-400">
             Add your first skill using the form above.
           </p>

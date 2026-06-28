@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
+import { BrandLogo, IconBox } from "@/components/icons";
 
 export default async function HomePage() {
   const user = await getCurrentUser();
@@ -8,29 +9,29 @@ export default async function HomePage() {
     {
       title: "Profile & About",
       desc: "Maintain your personal info, headline, bio and contact details in one place.",
-      icon: "👤",
+      icon: "profile" as const,
+      variant: "blue" as const,
     },
     {
       title: "Skills",
       desc: "Add, update and remove skills with proficiency levels and categories.",
-      icon: "⚡",
+      icon: "skills" as const,
+      variant: "amber" as const,
     },
     {
       title: "Projects",
       desc: "Showcase your work with live demos, source links, tags and images.",
-      icon: "🚀",
+      icon: "projects" as const,
+      variant: "violet" as const,
     },
   ];
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-white via-brand-50/40 to-white">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2 text-lg font-bold text-slate-900">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">
-            P
-          </span>
-          Portfolio Manager
-        </div>
+        <Link href="/">
+          <BrandLogo className="text-lg" />
+        </Link>
         <nav className="flex items-center gap-3">
           {user ? (
             <Link href="/dashboard" className="btn-primary">
@@ -50,7 +51,8 @@ export default async function HomePage() {
       </header>
 
       <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 text-center">
-        <span className="inline-block rounded-full border border-brand-200 bg-white px-4 py-1.5 text-sm font-medium text-brand-700 shadow-sm">
+        <span className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-1.5 text-sm font-medium text-brand-700 shadow-sm">
+          <IconBox name="terminal" size="sm" variant="soft" />
           Build & manage your developer portfolio
         </span>
         <h1 className="mx-auto mt-6 max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-6xl">
@@ -80,9 +82,7 @@ export default async function HomePage() {
         <div className="mt-20 grid gap-6 sm:grid-cols-3">
           {features.map((f) => (
             <div key={f.title} className="card p-6 text-left animate-fade-in">
-              <div className="mb-4 grid h-12 w-12 place-items-center rounded-xl bg-brand-100 text-2xl">
-                {f.icon}
-              </div>
+              <IconBox name={f.icon} size="lg" variant={f.variant} className="mb-4" />
               <h3 className="text-lg font-semibold text-slate-900">
                 {f.title}
               </h3>

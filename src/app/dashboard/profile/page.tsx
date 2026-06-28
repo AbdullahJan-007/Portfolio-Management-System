@@ -48,6 +48,13 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => r.json())
@@ -122,6 +129,44 @@ export default function ProfilePage() {
       setError("Network error. Please try again.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    setPasswordMessage(null);
+    setPasswordError(null);
+
+    if (newPassword.length < 8) {
+      setPasswordError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match.");
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data.error || "Could not change password");
+        return;
+      }
+      setPasswordMessage("Password changed successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordMessage(null), 4000);
+    } catch {
+      setPasswordError("Network error. Please try again.");
+    } finally {
+      setChangingPassword(false);
     }
   }
 
@@ -344,6 +389,76 @@ export default function ProfilePage() {
             />
           </div>
         </div>
+      </section>
+
+      {/* Change Password */}
+      <section className="card p-6">
+        <h3 className="text-base font-semibold text-slate-900">Change Password</h3>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Update your account password. You will stay logged in after changing it.
+        </p>
+
+        {passwordMessage && (
+          <div className="mt-4 flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            {passwordMessage}
+          </div>
+        )}
+        {passwordError && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {passwordError}
+          </div>
+        )}
+
+        <form onSubmit={handlePasswordChange} className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="label">Current password</label>
+            <input
+              type="password"
+              className="input"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+            />
+          </div>
+          <div>
+            <label className="label">New password</label>
+            <input
+              type="password"
+              className="input"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+            />
+          </div>
+          <div>
+            <label className="label">Confirm new password</label>
+            <input
+              type="password"
+              className="input"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              minLength={8}
+              autoComplete="new-password"
+            />
+          </div>
+          <div className="sm:col-span-2 flex justify-end">
+            <button
+              type="submit"
+              className="btn-secondary"
+              disabled={changingPassword}
+            >
+              {changingPassword ? "Updating…" : "Change password"}
+            </button>
+          </div>
+        </form>
       </section>
 
       <div className="flex justify-end">

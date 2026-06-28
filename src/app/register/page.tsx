@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { BrandLogo } from "@/components/icons";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -50,14 +51,8 @@ export default function RegisterPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-gradient-to-b from-brand-50 to-white px-4 py-10">
       <div className="w-full max-w-md">
-        <Link
-          href="/"
-          className="mb-6 flex items-center justify-center gap-2 text-lg font-bold text-slate-900"
-        >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand-600 text-white">
-            P
-          </span>
-          Portfolio Manager
+        <Link href="/" className="mb-6 flex justify-center">
+          <BrandLogo className="text-lg" />
         </Link>
 
         <div className="card animate-fade-in p-8">

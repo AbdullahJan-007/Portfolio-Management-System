@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import NotificationsPanel from "./NotificationsPanel";
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": { title: "Overview", subtitle: "Welcome to your dashboard" },
@@ -63,8 +64,9 @@ export default function Header({ email, name, avatarUrl, onMenuClick }: HeaderPr
         </div>
       </div>
 
-      {/* Right: user info */}
-      <div className="flex shrink-0 items-center gap-3">
+      {/* Right: notifications + user info */}
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <NotificationsPanel />
         <div className="hidden text-right sm:block">
           <p className="text-sm font-medium text-slate-900 truncate max-w-[160px]">
             {displayName}

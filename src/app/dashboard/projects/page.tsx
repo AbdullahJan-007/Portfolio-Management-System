@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { IconBox } from "@/components/icons";
 
 type Project = {
   id: string;
@@ -350,8 +351,10 @@ export default function ProjectsPage() {
         </div>
       ) : projects.length === 0 ? (
         <div className="card p-12 text-center">
-          <p className="text-4xl">🚀</p>
-          <p className="mt-3 text-base font-medium text-slate-700">No projects yet</p>
+          <div className="mx-auto w-fit">
+            <IconBox name="projects" size="2xl" variant="violet" />
+          </div>
+          <p className="mt-4 text-base font-medium text-slate-700">No projects yet</p>
           <p className="mt-1 text-sm text-slate-400">
             Click &ldquo;Add project&rdquo; to showcase your first project.
           </p>
@@ -361,8 +364,10 @@ export default function ProjectsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card p-10 text-center">
-          <p className="text-3xl">🔍</p>
-          <p className="mt-3 text-sm font-medium text-slate-700">No projects match your filters</p>
+          <div className="mx-auto w-fit">
+            <IconBox name="search" size="xl" variant="slate" />
+          </div>
+          <p className="mt-4 text-sm font-medium text-slate-700">No projects match your filters</p>
           <button
             onClick={() => {
               setSearch("");
@@ -386,8 +391,8 @@ export default function ProjectsPage() {
                   className="h-44 w-full object-cover"
                 />
               ) : (
-                <div className="grid h-44 w-full place-items-center bg-gradient-to-br from-brand-50 to-brand-100 text-5xl">
-                  🚀
+                <div className="grid h-44 w-full place-items-center bg-gradient-to-br from-brand-50 to-brand-100">
+                  <IconBox name="folder-code" size="xl" variant="soft" />
                 </div>
               )}
               <div className="flex flex-1 flex-col p-5">
