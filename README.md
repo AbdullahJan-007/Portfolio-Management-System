@@ -1,4 +1,4 @@
-npm run db:push# Portfolio Manager
+# Portfolio Manager
 
 A full-stack **Portfolio Management System** — register, log in, and manage your
 personal profile, skills and projects through a modern, interactive dashboard,
@@ -13,19 +13,17 @@ designed to deploy to Vercel with a single click.
 
 1. [Project Overview](#1-project-overview)
 2. [Features](#2-features)
-3. [Screenshots](#3-screenshots)
-4. [Live Project Link](#4-live-project-link)
-5. [Technology Stack](#5-technology-stack)
-6. [Database Design](#6-database-design)
-7. [Project Structure](#7-project-structure)
-8. [API Documentation](#8-api-documentation)
-9. [Installation Guide](#9-installation-guide)
-10. [Environment Variables](#10-environment-variables)
-11. [Deployment Guide (Vercel)](#11-deployment-guide-vercel)
-12. [GitHub Repository](#12-github-repository)
-13. [Security Notes](#13-security-notes)
-14. [Roadmap](#14-roadmap)
-15. [License](#15-license)
+3. [Live Project Link](#4-live-project-link)
+4. [Technology Stack](#5-technology-stack)
+5. [Database Design](#6-database-design)
+6. [Project Structure](#7-project-structure)
+7. [API Documentation](#8-api-documentation)
+8. [Installation Guide](#9-installation-guide)
+9. [Environment Variables](#10-environment-variables)
+10. [Deployment Guide (Vercel)](#11-deployment-guide-vercel)
+11. [Security Notes](#13-security-notes)
+12. [Roadmap](#14-roadmap)
+13. [License](#15-license)
 
 ---
 
@@ -116,41 +114,16 @@ data every time it's viewed.
 
 ---
 
-## 3. Screenshots
-
-> The interface is data-driven — the dashboard, preview page, and stat cards
-> only look "finished" once populated with your own content. Run the app
-> locally (see [Installation Guide](#9-installation-guide)) or open your
-> Vercel deployment, create an account, add a project or two, and capture
-> your own screenshots of the pages below. Drop the images into a `docs/`
-> folder and update the paths so they render on GitHub:
-
-| Page | Suggested file |
-| --- | --- |
-| Landing page (`/`) | `docs/screenshot-landing.png` |
-| Login / Register (`/login`, `/register`) | `docs/screenshot-auth.png` |
-| Dashboard overview (`/dashboard`) | `docs/screenshot-dashboard.png` |
-| Profile editor (`/dashboard/profile`) | `docs/screenshot-profile.png` |
-| Projects manager (`/dashboard/projects`) | `docs/screenshot-projects.png` |
-| Live preview (`/dashboard/preview`) | `docs/screenshot-preview.png` |
-
-```md
-<!-- Example embed once the files exist -->
-![Dashboard overview](docs/screenshot-dashboard.png)
-```
-
----
-
-## 4. Live Project Link
+## 3. Live Project Link
 
 > Add your deployed URL here once you've completed the
 > [Deployment Guide](#11-deployment-guide-vercel):
 
-**Live demo:** `https://<your-project-name>.vercel.app`
+**Live demo:** `portfolio-management-system-coral.vercel.app`
 
 ---
 
-## 5. Technology Stack
+## 4. Technology Stack
 
 | Layer | Technology | Purpose |
 | --- | --- | --- |
@@ -170,7 +143,7 @@ customizable.
 
 ---
 
-## 6. Database Design
+## 5. Database Design
 
 ### Entity-Relationship Diagram
 
@@ -259,7 +232,7 @@ URL-safe — a good fit for public-ish IDs used in API routes).
 
 ---
 
-## 7. Project Structure
+## 6. Project Structure
 
 ```
 .
@@ -311,7 +284,7 @@ URL-safe — a good fit for public-ish IDs used in API routes).
 
 ---
 
-## 8. API Documentation
+## 7. API Documentation
 
 All endpoints are Next.js **Route Handlers** under `src/app/api/`, return
 JSON, and (except register/login/logout) require a valid session cookie.
@@ -412,7 +385,7 @@ cookie automatically on same-origin requests.
 
 ---
 
-## 9. Installation Guide
+## 8. Installation Guide
 
 ### Prerequisites
 
@@ -476,7 +449,7 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/portfolio"
 
 ---
 
-## 10. Environment Variables
+## 9. Environment Variables
 
 | Variable | Required | Description |
 | --- | --- | --- |
@@ -489,7 +462,7 @@ next section).
 
 ---
 
-## 11. Deployment Guide (Vercel)
+## 10. Deployment Guide (Vercel)
 
 ### Step 1 — Provision a production database
 
@@ -552,19 +525,7 @@ triggers an automatic redeploy.
 
 ---
 
-## 12. GitHub Repository
-
-> Replace with your repository once pushed:
-
-**Repository:** `https://github.com/<your-username>/<your-repo>`
-
-Suggested repo description: *"Full-stack portfolio management system —
-Next.js, TypeScript, Prisma, PostgreSQL. Manage your profile, skills and
-projects from a dashboard and share a live preview."*
-
----
-
-## 13. Security Notes
+## 11. Security Notes
 
 - Passwords are hashed with bcrypt (cost 10) — raw passwords are never
   logged or stored.
@@ -583,7 +544,7 @@ projects from a dashboard and share a live preview."*
 
 ---
 
-## 14. Roadmap
+## 12. Roadmap
 
 Ideas for extending this project further:
 
@@ -599,6 +560,6 @@ Ideas for extending this project further:
 
 ---
 
-## 15. License
+## 13. License
 
 Released under the [MIT License](LICENSE).
