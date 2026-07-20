@@ -145,65 +145,6 @@ customizable.
 
 ## 5. Database Design
 
-### Entity-Relationship Diagram
-
-```mermaid
-erDiagram
-    USER ||--o| PROFILE : has
-    USER ||--o{ SKILL : owns
-    USER ||--o{ PROJECT : owns
-    USER ||--o{ PROJECT_CATEGORY : owns
-
-    USER {
-        string id PK
-        string email UK
-        string passwordHash
-        datetime createdAt
-        datetime updatedAt
-    }
-    PROFILE {
-        string id PK
-        string userId FK
-        string fullName
-        string title
-        string avatarUrl
-        string location
-        string bio
-        string contactEmail
-        string phone
-        string website
-        string github
-        string linkedin
-        string twitter
-    }
-    SKILL {
-        string id PK
-        string userId FK
-        string name
-        string category
-        int level
-    }
-    PROJECT {
-        string id PK
-        string userId FK
-        string title
-        string description
-        string category
-        string url
-        string repoUrl
-        string imageUrl
-        string tags
-    }
-    PROJECT_CATEGORY {
-        string id PK
-        string userId FK
-        string name
-        string slug
-    }
-```
-
-### Model Reference
-
 **User** — the authentication identity. `email` is unique; `passwordHash` is
 a bcrypt hash, never the raw password. Deleting a user cascades to their
 Profile, Skills, Projects and Project Categories (`onDelete: Cascade`).
@@ -227,8 +168,6 @@ is a first-class, manageable entity (create/rename/delete from the
 Categories page) with a `(userId, name)` and `(userId, slug)` unique
 constraint so the same user can't create duplicate categories.
 
-All primary keys are `cuid()` strings (collision-resistant, sortable,
-URL-safe — a good fit for public-ish IDs used in API routes).
 
 ---
 
