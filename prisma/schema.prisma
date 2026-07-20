@@ -1,0 +1,110 @@
+// Prisma schema for the Portfolio Management System
+// Database: PostgreSQL — works locally (Docker/Postgres.app) and in production
+// on serverless platforms like Vercel, where the filesystem is read-only /
+// ephemeral and a file-based database (SQLite) cannot be used reliably.
+// Recommended free managed providers: Neon, Supabase, or Vercel Postgres.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// User: authentication identity. One user owns exactly one Profile and many
+// Skills / Projects.
+// ---------------------------------------------------------------------------
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profile           Profile?
+  skills            Skill[]
+  projects          Project[]
+  projectCategories ProjectCategory[]
+}
+
+// ---------------------------------------------------------------------------
+// Profile: the public-facing portfolio info (personal, about, contact).
+// One-to-one with User.
+// ---------------------------------------------------------------------------
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Personal information
+  fullName String
+  title    String? // e.g. "Full-Stack Developer"
+  avatarUrl String?
+  location String?
+
+  // About section
+  bio String? // longer description / about me
+
+  // Contact information
+  contactEmail String?
+  phone        String?
+  website      String?
+  github       String?
+  linkedin     String?
+  twitter      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Skill: a single competency belonging to a user.
+// ---------------------------------------------------------------------------
+model Skill {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name     String
+  category String? // e.g. "Frontend", "Backend", "Tools"
+  level    Int     @default(3) // proficiency 1-5
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Project: a portfolio project belonging to a user.
+// ---------------------------------------------------------------------------
+model Project {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  category    String? // e.g. "Web App", "Mobile", "Backend", "Other"
+  url         String? // live demo URL
+  repoUrl     String? // source code URL
+  imageUrl    String?
+  tags        String? // comma-separated list of tags
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectCategory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@unique([userId, slug])
+}
